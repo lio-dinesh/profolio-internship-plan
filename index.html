@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="PROFOLIO 7-Day Developer Internship Task Tracker — Premium Glassmorphism Dashboard" />
+  <title>PROFOLIO Internship Tracker | 7-Day Developer Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-diamond">◆</div>
+      <div>
+        <h1 class="brand-title">PROFOLIO</h1>
+        <p class="brand-sub">Internship Tracker</p>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav" aria-label="Day navigation">
+      <!-- Rendered by JS -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-reminder glass-card-sm">
+        <p class="reminder-title">📌 Daily Reminders</p>
+        <ul class="reminder-list">
+          <li>Fill in every field</li>
+          <li>Attach real proof</li>
+          <li>Submit before deadline</li>
+          <li>Daily submissions are mandatory</li>
+        </ul>
+      </div>
+      <div class="sidebar-actions" style="margin-top: 1rem;">
+        <button id="export-pdf-btn" class="btn btn-primary" style="width: 100%;">📄 Save as PDF</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile top bar -->
+  <div class="mobile-topbar" id="mobile-topbar">
+    <button class="hamburger" id="hamburger-btn" aria-label="Open menu">☰</button>
+    <span class="mobile-title">PROFOLIO Tracker</span>
+    <span class="mobile-date" id="mobile-date"></span>
+  </div>
+
+  <!-- ─── MAIN ─── -->
+  <main class="main" id="main">
+
+    <!-- HEADER -->
+    <header class="dash-header">
+      <div class="dash-header-left">
+        <h2 class="dash-title">Developer Internship Dashboard</h2>
+        <p class="dash-subtitle">Track your PROFOLIO 7-Day internship tasks, submissions &amp; progress</p>
+      </div>
+      <div class="dash-header-right">
+        <span class="header-date-label">Today</span>
+        <span class="header-date-value" id="header-date"></span>
+      </div>
+    </header>
+
+    <!-- OVERVIEW STATS -->
+    <section class="overview-stats" id="overview-stats" aria-label="Internship Overview">
+      <div class="stat-card stat-total">
+        <div class="stat-icon-wrap"><span>📅</span></div>
+        <div class="stat-body">
+          <span class="stat-num" id="stat-total-days">7</span>
+          <span class="stat-label">Total Days</span>
+        </div>
+      </div>
+      <div class="stat-card stat-completed">
+        <div class="stat-icon-wrap"><span>✅</span></div>
+        <div class="stat-body">
+          <span class="stat-num" id="stat-completed-days">0</span>
+          <span class="stat-label">Completed</span>
+        </div>
+      </div>
+      <div class="stat-card stat-pending">
+        <div class="stat-icon-wrap"><span>⏳</span></div>
+        <div class="stat-body">
+          <span class="stat-num" id="stat-pending-days">7</span>
+          <span class="stat-label">Pending</span>
+        </div>
+      </div>
+      <div class="stat-card stat-progress">
+        <div class="stat-icon-wrap"><span>📊</span></div>
+        <div class="stat-body">
+          <span class="stat-num" id="stat-progress-pct">0%</span>
+          <span class="stat-label">Progress</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- OVERALL PROGRESS BAR -->
+    <section class="overall-progress glass-card">
+      <div class="progress-row">
+        <span class="progress-title">Overall Internship Progress</span>
+        <span class="progress-pct" id="progress-pct-text">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <p class="progress-summary" id="progress-summary">Start your internship journey — select a day from the sidebar.
+      </p>
+
+      <!-- Mini day dots -->
+      <div class="day-dots" id="day-dots">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- DAY CONTENT PANEL -->
+    <section class="day-panel" id="day-panel">
+      <!-- Rendered by JS: day header, tasks, deliverables, submission form -->
+    </section>
+
+    <!-- NOTES -->
+    <section class="notes-section glass-card">
+      <h3 class="notes-title">📝 Personal Notes</h3>
+      <textarea id="notes-area" class="notes-area"
+        placeholder="Write any extra comments, observations, or reminders here…" rows="4"></textarea>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p>PROFOLIO 7-Day Developer Internship Practice Project · Built with ❤️ &amp; Dinesh G </p>
+    </footer>
+
+  </main>
+
+  <!-- Overlay for mobile sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
