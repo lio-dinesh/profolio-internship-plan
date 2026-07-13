@@ -21,7 +21,9 @@
   <!-- ─── SIDEBAR ─── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-diamond">◆</div>
+      <div class="brand-diamond">
+        <img src="assets/profolio-logo.png" alt="Profolio Logo" class="brand-logo-img" />
+      </div>
       <div>
         <h1 class="brand-title">PROFOLIO</h1>
         <p class="brand-sub">Internship Tracker</p>
@@ -67,6 +69,32 @@
       <div class="dash-header-right">
         <span class="header-date-label">Today</span>
         <span class="header-date-value" id="header-date"></span>
+        <button class="btn btn-start-internship" id="start-internship-btn">🚀 Start Internship</button>
+        <div class="countdown-timer" id="countdown-timer" style="display:none;">
+          <div class="countdown-label">⏳ Time Remaining</div>
+          <div class="countdown-digits" id="countdown-digits">
+            <div class="countdown-unit">
+              <span class="countdown-num" id="cd-days">0</span>
+              <span class="countdown-tag">Days</span>
+            </div>
+            <span class="countdown-sep">:</span>
+            <div class="countdown-unit">
+              <span class="countdown-num" id="cd-hours">00</span>
+              <span class="countdown-tag">Hrs</span>
+            </div>
+            <span class="countdown-sep">:</span>
+            <div class="countdown-unit">
+              <span class="countdown-num" id="cd-mins">00</span>
+              <span class="countdown-tag">Min</span>
+            </div>
+            <span class="countdown-sep">:</span>
+            <div class="countdown-unit">
+              <span class="countdown-num" id="cd-secs">00</span>
+              <span class="countdown-tag">Sec</span>
+            </div>
+          </div>
+          <div class="countdown-day-info" id="countdown-day-info"></div>
+        </div>
       </div>
     </header>
 
@@ -142,6 +170,7 @@
   <!-- Overlay for mobile sidebar -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
+  <script src="assets/logo-data.js"></script>
   <script src="script.js"></script>
 </body>
 

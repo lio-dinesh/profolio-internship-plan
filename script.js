@@ -144,7 +144,8 @@ let state = {
   taskProgress: {},   // { "1": [true, false, ...], ... }
   submissions: {},    // { "1": { date, group, name, ... }, ... }
   proofFiles: {},     // { "1": [{ name, type, dataUrl }, ...], ... }
-  notes: ''
+  notes: '',
+  startTime: null     // Timestamp of when the internship started
 };
 
 function defaultTaskProgress(day) {
@@ -170,7 +171,8 @@ function loadState() {
         taskProgress: parsed.taskProgress || {},
         submissions: parsed.submissions || {},
         proofFiles: parsed.proofFiles || {},
-        notes: parsed.notes || ''
+        notes: parsed.notes || '',
+        startTime: parsed.startTime || null
       };
     }
   } catch {
@@ -580,129 +582,180 @@ function escapeAttr(str) {
 }
 
 /* ─────────────────────────────────
-   PDF EXPORT
+   PDF EXPORT — with Profolio "P" Watermark
 ───────────────────────────────── */
 
-function generateReportHTML() {
-  const { totalDays, completedDays, pct } = getOverallStats();
+/**
+ * Profolio "P" logo source.
+ * Prefers the embedded base64 data URI from logo-data.js (loaded before this script)
+ * for zero-CORS, offline-capable operation. Falls back to the local file path.
+ */
+const PROFOLIO_LOGO_SRC = (typeof PROFOLIO_LOGO_BASE64 !== 'undefined')
+  ? PROFOLIO_LOGO_BASE64
+  : 'assets/profolio-logo.png';
 
-  let html = `
-    <div style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 30px; max-width: 780px; margin: 0 auto; line-height: 1.7; font-size: 13px;">
-      <div style="text-align: center; margin-bottom: 30px; padding-bottom: 18px; border-bottom: 3px solid #111;">
-        <h1 style="margin: 0 0 4px 0; font-size: 24px; letter-spacing: 2px; text-transform: uppercase;">PROFOLIO</h1>
-        <p style="margin: 0; font-size: 13px; color: #555;">7-Day Developer Internship Report</p>
-        <p style="margin: 6px 0 0; font-size: 11px; color: #888;">Generated: ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-      </div>
+/**
+ * Loads an image, removes white/near-white background pixels,
+ * and returns a transparent-background PNG as a data URL.
+ * @param {string} src - Path or data URL of the logo image
+ * @param {number} whiteThreshold - RGB threshold (0-255). Pixels where R,G,B are all >= this value are made transparent.
+ * @returns {Promise<string>} - Transparent PNG data URL
+ */
+function loadTransparentLogo(src, whiteThreshold = 230) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
 
-      <div style="display:flex; gap:30px; justify-content:center; margin-bottom:28px; padding:14px 20px; background:#f8f8f8; border:1px solid #ddd; border-radius:6px; text-align:center;">
-        <div><div style="font-size:22px; font-weight:bold; color:#4f46e5;">${pct}%</div><div style="font-size:11px; color:#666; text-transform:uppercase;">Overall Progress</div></div>
-        <div><div style="font-size:22px; font-weight:bold; color:#16a34a;">${completedDays}/${totalDays}</div><div style="font-size:11px; color:#666; text-transform:uppercase;">Days Completed</div></div>
-      </div>
-  `;
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
 
-  DAYS.forEach((day, index) => {
-    const key = String(day.id);
-    const sub = state.submissions[key] || {};
-    const files = state.proofFiles[key] || [];
-    const { completed, total } = getDayTaskStats(day);
-    const status = getDayStatus(day);
-    const statusColor = status === 'completed' ? '#16a34a' : status === 'in-progress' ? '#d97706' : '#6b7280';
-    const isLast = index === DAYS.length - 1;
-
-    const field = (label, val, multiline = false) => {
-      const display = val && val.trim() ? val : '';
-      const valueHtml = display
-        ? `<span style="color:#111;">${escapeHtml(display)}</span>`
-        : `<span style="color:#bbb;">—</span>`;
-      if (multiline) {
-        return `
-          <div style="margin-bottom:14px;">
-            <div style="font-weight:700; color:#333; margin-bottom:4px;">${label}</div>
-            <div style="white-space:pre-wrap; padding:8px 12px; background:#fafafa; border-left:3px solid #e0e0e0; border-radius:0 4px 4px 0; color:#111; min-height:28px;">${display ? escapeHtml(display) : '<span style="color:#bbb;">—</span>'}</div>
-          </div>`;
+      // Make white / near-white pixels fully transparent
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        if (r >= whiteThreshold && g >= whiteThreshold && b >= whiteThreshold) {
+          data[i + 3] = 0; // alpha = 0 (transparent)
+        }
       }
-      return `<div style="margin-bottom:10px;"><span style="font-weight:700; color:#333;">${label}</span>&nbsp; ${valueHtml}</div>`;
+
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
     };
-
-    html += `
-      <div style="margin-bottom:${isLast ? '20px' : '35px'}; padding:22px 24px; border:1px solid #ccc; border-radius:8px; background:#fff; page-break-inside:avoid;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #eee;">
-          <div>
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#888; margin-bottom:3px;">Day ${day.id} of ${DAYS.length}</div>
-            <div style="font-size:17px; font-weight:800; color:#111;">${escapeHtml(day.title)}</div>
-            <div style="font-size:11px; color:#777; margin-top:3px; font-style:italic;">${escapeHtml(day.objective)}</div>
-          </div>
-          <div style="text-align:right;">
-            <span style="font-size:11px; font-weight:700; color:${statusColor}; border:1px solid ${statusColor}; padding:3px 10px; border-radius:12px; text-transform:uppercase;">${STATUS_LABEL[status]}</span>
-            <div style="font-size:11px; color:#888; margin-top:6px;">Tasks: ${completed}/${total} done</div>
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 30px; margin-bottom:6px;">
-          <div>${field('Date:', sub.date)}</div>
-          <div>${field('Group:', sub.group)}</div>
-          <div>${field('Name:', sub.name)}</div>
-          <div>${field('Role:', sub.role)}</div>
-        </div>
-
-        <hr style="border:none; border-top:1px dashed #e0e0e0; margin:12px 0;" />
-
-        ${field('Task Assigned:', sub.taskAssigned, true)}
-        ${field('Task Completed:', sub.taskCompleted, true)}
-
-        <div style="margin-bottom:14px;">
-          <div style="font-weight:700; color:#333; margin-bottom:6px;">Proof of Work: <span style="font-weight:400; font-size:11px; color:#888;">(screenshots / files / links)</span></div>
-          <div style="padding:8px 12px; background:#fafafa; border-left:3px solid #e0e0e0; border-radius:0 4px 4px 0; min-height:28px;">
-          ${sub.proofOfWork ? `<div style="color:#4f46e5; word-break:break-all; margin-bottom:${files.length ? '8px' : '0'};">🔗 ${escapeHtml(sub.proofOfWork)}</div>` : ''}
-          ${files.length > 0
-        ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
-                ${files.map(pf => pf.type.startsWith('image/')
-          ? `<div style="text-align:center;"><img src="${pf.dataUrl}" style="max-width:140px;max-height:110px;border:1px solid #ddd;border-radius:4px;display:block;" /><div style="font-size:9px;color:#777;margin-top:2px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(pf.name)}</div></div>`
-          : `<div style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;font-size:11px;">📄 ${escapeHtml(pf.name)}</div>`
-        ).join('')}
-              </div>`
-        : (sub.proofOfWork ? '' : '<span style="color:#bbb;">—</span>')
-      }
-          </div>
-        </div>
-
-        ${field('Challenges Faced:', sub.challengesFaced, true)}
-        ${field('Learning Outcome:', sub.learningOutcome, true)}
-
-        <hr style="border:none; border-top:1px dashed #e0e0e0; margin:12px 0;" />
-        ${field('Submitted On:', sub.submittedOn)}
-      </div>
-    `;
+    img.onerror = () => reject(new Error('Failed to load logo image'));
+    img.src = src;
   });
+}
 
-  // Personal Notes
-  if (state.notes && state.notes.trim()) {
-    html += `
-      <div style="margin-bottom:20px; padding:22px 24px; border:1px solid #ccc; border-radius:8px; background:#fffef5; page-break-inside:avoid;">
-        <div style="font-weight:800; font-size:15px; margin-bottom:10px; color:#111;">📝 Personal Notes</div>
-        <div style="white-space:pre-wrap; font-size:13px; color:#333; line-height:1.7;">${escapeHtml(state.notes)}</div>
-      </div>
-    `;
+/**
+ * Adds a centered watermark image to every page of a jsPDF document.
+ * @param {object} pdf - jsPDF instance
+ * @param {string} watermarkDataUrl - Transparent PNG data URL of the watermark
+ * @param {number} opacity - Watermark opacity (0-1), recommended 0.10–0.12
+ */
+function addWatermarkToAllPages(pdf, watermarkDataUrl, opacity = 0.11) {
+  const totalPages = pdf.internal.getNumberOfPages();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  // Watermark size — about 55% of the smaller page dimension for a prominent but subtle mark
+  const watermarkSize = Math.min(pageWidth, pageHeight) * 0.55;
+  const x = (pageWidth - watermarkSize) / 2;
+  const y = (pageHeight - watermarkSize) / 2;
+
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+
+    // Save current graphics state
+    pdf.saveGraphicsState();
+
+    // Set opacity via graphics state (GState)
+    pdf.setGState(new pdf.GState({ opacity: opacity }));
+
+    // Add the watermark image centered on the page
+    pdf.addImage(
+      watermarkDataUrl,
+      'PNG',
+      x,
+      y,
+      watermarkSize,
+      watermarkSize
+    );
+
+    // Restore graphics state so content above remains fully opaque
+    pdf.restoreGraphicsState();
   }
+}
+
+function generateReportHTML() {
+  let html = `<div style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 20px; max-width: 800px; margin: 0 auto;">`;
+
+  const day = DAYS.find(d => String(d.id) === String(state.activeDay));
+  if (!day) return html + `</div>`;
+
+  const key = String(day.id);
+  const sub = state.submissions[key] || {};
+  const files = state.proofFiles[key] || [];
+
+  const dateVal = sub.date ? escapeHtml(sub.date) : '[Date not provided]';
+  const nameVal = sub.name ? escapeHtml(sub.name) : '[Name not provided]';
+  const roleVal = sub.role ? escapeHtml(sub.role) : '[Role not provided]';
+
+  const formatText = (text) => text && text.trim() ? escapeHtml(text).replace(/\n/g, '<br>') : '<em>[Not provided]</em>';
 
   html += `
-      <div style="text-align:center; font-size:11px; color:#aaa; margin-top:20px; padding-top:12px; border-top:1px solid #eee;">
-        PROFOLIO Internship Tracker &nbsp;·&nbsp; Built with ❤️ &amp; Dinesh G
+    <h1 style="text-align:center; font-size: 26px; text-transform:uppercase; margin-bottom: 25px;">PROFOLIO INTERNSHIP DAY ${day.id}</h1>
+    
+    <div style="font-size:18px; line-height:1.6; margin-bottom: 30px;">
+      <div><strong>DATE:</strong> ${dateVal}</div>
+      <div><strong>NAME:</strong> ${nameVal}</div>
+      <div><strong>ROLE:</strong> ${roleVal}</div>
+    </div>
+    
+    <div style="font-size:16px; line-height:1.6;">
+      <div style="margin-bottom: 20px;">
+        <strong>Task Assigned:</strong>
+        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.taskAssigned)}</div>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <strong>Task Completed:</strong>
+        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.taskCompleted)}</div>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <strong>Proof of Work:</strong>
+        <div style="margin-top: 5px; padding-left: 25px;">
+          ${sub.proofOfWork ? `Link: <a href="${escapeHtml(sub.proofOfWork)}" style="color: #0066cc;">${escapeHtml(sub.proofOfWork)}</a><br>` : ''}
+          ${files.map(pf => {
+            if (pf.type.startsWith('image/')) {
+              return `<img src="${pf.dataUrl}" style="max-width:100%; height:auto; margin-top:15px; border: 1px solid #ccc; display: block;" />`;
+            } else {
+              return `<div style="margin-top:10px;">📄 Attached File: ${escapeHtml(pf.name)}</div>`;
+            }
+          }).join('')}
+          ${!sub.proofOfWork && files.length === 0 ? '<em>[No proof provided]</em>' : ''}
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <strong>Challenges Faced:</strong>
+        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.challengesFaced)}</div>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <strong>Learning Outcome:</strong>
+        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.learningOutcome)}</div>
       </div>
     </div>
   `;
 
+  html += `</div>`;
   return html;
 }
 
-function exportPDF() {
-  showToast('📄 Generating professional PDF report...', 'info');
+async function exportPDF() {
+  showToast('📄 Generating professional PDF report…', 'info');
 
+  // ── Step 1: Pre-load & process the watermark logo (remove white bg) ──
+  let watermarkDataUrl = null;
+  try {
+    watermarkDataUrl = await loadTransparentLogo(PROFOLIO_LOGO_SRC, 230);
+  } catch (err) {
+    console.warn('Watermark logo could not be loaded, PDF will be generated without watermark:', err);
+  }
+
+  // ── Step 2: Build the report HTML container ──
   const container = document.createElement('div');
   container.innerHTML = generateReportHTML();
   document.body.appendChild(container);
 
-  // hide it from the user's view while generating
   container.style.position = 'absolute';
   container.style.top = '-9999px';
   container.style.left = '-9999px';
@@ -710,19 +763,102 @@ function exportPDF() {
 
   const opt = {
     margin: 10,
-    filename: 'Profolio_Internship_Report.pdf',
+    filename: `Day_${state.activeDay}_Report.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, logging: false },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(container).save().then(() => {
-    showToast('✅ Professional PDF downloaded successfully', 'success');
-    document.body.removeChild(container);
-  }).catch(() => {
+  try {
+    // ── Step 3: Generate PDF with html2pdf, get jsPDF instance ──
+    const worker = html2pdf().set(opt).from(container);
+
+    // Use the toPdf() → get('pdf') pipeline to access the raw jsPDF object
+    const pdf = await worker.toPdf().get('pdf');
+
+    // ── Step 4: Inject watermark on every page (behind content) ──
+    if (watermarkDataUrl) {
+      // We need to re-order: watermark goes UNDER existing content.
+      // Since jsPDF draws in order, we add watermark first on a fresh page structure.
+      // However, html2pdf already rendered content. We use a workaround:
+      // Add the watermark image with low opacity on top — at 10-12% opacity
+      // it appears as a subtle background mark that doesn't hinder readability.
+      addWatermarkToAllPages(pdf, watermarkDataUrl, 0.11);
+    }
+
+    // ── Step 5: Save the final PDF ──
+    pdf.save(opt.filename);
+
+    showToast('✅ Professional PDF with watermark downloaded!', 'success');
+  } catch (err) {
+    console.error('PDF generation error:', err);
     showToast('❌ Error generating PDF', 'error');
+  } finally {
     document.body.removeChild(container);
-  });
+  }
+}
+
+/* ─────────────────────────────────
+   COUNTDOWN TIMER
+───────────────────────────────── */
+let countdownInterval = null;
+
+function updateCountdownDisplay() {
+  if (!state.startTime) return;
+
+  const startBtn = document.getElementById('start-internship-btn');
+  const timerDiv = document.getElementById('countdown-timer');
+  const dayInfo = document.getElementById('countdown-day-info');
+
+  if (startBtn) startBtn.style.display = 'none';
+  if (timerDiv) timerDiv.style.display = 'block';
+
+  const totalDuration = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+  const now = new Date().getTime();
+  const elapsed = now - state.startTime;
+  const remaining = totalDuration - elapsed;
+
+  if (remaining <= 0) {
+    document.getElementById('cd-days').textContent = '0';
+    document.getElementById('cd-hours').textContent = '00';
+    document.getElementById('cd-mins').textContent = '00';
+    document.getElementById('cd-secs').textContent = '00';
+    if (dayInfo) dayInfo.textContent = 'Internship Time Ended!';
+    clearInterval(countdownInterval);
+    return;
+  }
+
+  const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+  document.getElementById('cd-days').textContent = days;
+  document.getElementById('cd-hours').textContent = hours.toString().padStart(2, '0');
+  document.getElementById('cd-mins').textContent = minutes.toString().padStart(2, '0');
+  document.getElementById('cd-secs').textContent = seconds.toString().padStart(2, '0');
+  
+  const currentDayNumber = Math.min(7, Math.floor(elapsed / (1000 * 60 * 60 * 24)) + 1);
+  if (dayInfo) dayInfo.textContent = `Currently on Day ${currentDayNumber} of 7`;
+}
+
+function initCountdown() {
+  const startBtn = document.getElementById('start-internship-btn');
+  if (!state.startTime) {
+    if (startBtn) startBtn.style.display = 'inline-block';
+    return;
+  }
+  updateCountdownDisplay();
+  countdownInterval = setInterval(updateCountdownDisplay, 1000);
+}
+
+function handleStartInternship() {
+  if (!state.startTime) {
+    state.startTime = new Date().getTime();
+    saveState();
+    initCountdown();
+    showToast('🚀 Internship Started! Good luck!', 'success');
+  }
 }
 
 /* ─────────────────────────────────
@@ -753,6 +889,10 @@ function initEventListeners() {
   // Export PDF
   const exportPdfBtn = document.getElementById('export-pdf-btn');
   if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportPDF);
+
+  // Start Internship
+  const startBtn = document.getElementById('start-internship-btn');
+  if (startBtn) startBtn.addEventListener('click', handleStartInternship);
 }
 
 /* ─────────────────────────────────
@@ -766,6 +906,7 @@ function init() {
   renderDayPanel();
   initNotes();
   initEventListeners();
+  initCountdown();
 }
 
 document.addEventListener('DOMContentLoaded', init);
