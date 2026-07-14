@@ -674,7 +674,7 @@ function addWatermarkToAllPages(pdf, watermarkDataUrl, opacity = 0.11) {
 }
 
 function generateReportHTML() {
-  let html = `<div style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 20px; max-width: 800px; margin: 0 auto;">`;
+  let html = `<div style="font-family: Arial, sans-serif; color: #000; background: #fff; padding: 40px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">`;
 
   const day = DAYS.find(d => String(d.id) === String(state.activeDay));
   if (!day) return html + `</div>`;
@@ -683,55 +683,53 @@ function generateReportHTML() {
   const sub = state.submissions[key] || {};
   const files = state.proofFiles[key] || [];
 
-  const dateVal = sub.date ? escapeHtml(sub.date) : '[Date not provided]';
-  const nameVal = sub.name ? escapeHtml(sub.name) : '[Name not provided]';
-  const roleVal = sub.role ? escapeHtml(sub.role) : '[Role not provided]';
-
   const formatText = (text) => text && text.trim() ? escapeHtml(text).replace(/\n/g, '<br>') : '<em>[Not provided]</em>';
 
   html += `
-    <h1 style="text-align:center; font-size: 26px; text-transform:uppercase; margin-bottom: 25px;">PROFOLIO INTERNSHIP DAY ${day.id}</h1>
+    <h1 style="text-align:center; font-size: 28px; text-transform:uppercase; margin-bottom: 30px; color: #111;">PROFOLIO INTERNSHIP DAY ${day.id}</h1>
     
-    <div style="font-size:18px; line-height:1.6; margin-bottom: 30px;">
-      <div><strong>DATE:</strong> ${dateVal}</div>
-      <div><strong>NAME:</strong> ${nameVal}</div>
-      <div><strong>ROLE:</strong> ${roleVal}</div>
+    <div style="font-size:16px; line-height:1.8; margin-bottom: 40px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+      <div style="margin-bottom: 10px;"><strong>Date:</strong> ${sub.date ? escapeHtml(sub.date) : '[Not provided]'}</div>
+      <div style="margin-bottom: 10px;"><strong>Group:</strong> ${sub.group ? escapeHtml(sub.group) : '[Not provided]'}</div>
+      <div style="margin-bottom: 10px;"><strong>Name:</strong> ${sub.name ? escapeHtml(sub.name) : '[Not provided]'}</div>
+      <div style="margin-bottom: 10px;"><strong>Role:</strong> ${sub.role ? escapeHtml(sub.role) : '[Not provided]'}</div>
+      <div><strong>Submitted On:</strong> ${sub.submittedOn ? escapeHtml(sub.submittedOn) : '[Not provided]'}</div>
     </div>
     
     <div style="font-size:16px; line-height:1.6;">
-      <div style="margin-bottom: 20px;">
-        <strong>Task Assigned:</strong>
-        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.taskAssigned)}</div>
+      <div style="margin-bottom: 30px;">
+        <strong style="font-size: 18px; color: #000; display: block; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Task Assigned</strong>
+        <div style="margin-top: 5px;">${formatText(sub.taskAssigned)}</div>
       </div>
       
-      <div style="margin-bottom: 20px;">
-        <strong>Task Completed:</strong>
-        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.taskCompleted)}</div>
+      <div style="margin-bottom: 30px;">
+        <strong style="font-size: 18px; color: #000; display: block; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Task Completed</strong>
+        <div style="margin-top: 5px;">${formatText(sub.taskCompleted)}</div>
       </div>
       
-      <div style="margin-bottom: 20px;">
-        <strong>Proof of Work:</strong>
-        <div style="margin-top: 5px; padding-left: 25px;">
-          ${sub.proofOfWork ? `Link: <a href="${escapeHtml(sub.proofOfWork)}" style="color: #0066cc;">${escapeHtml(sub.proofOfWork)}</a><br>` : ''}
+      <div style="margin-bottom: 30px;">
+        <strong style="font-size: 18px; color: #000; display: block; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Proof of Work</strong>
+        <div style="margin-top: 5px;">
+          ${sub.proofOfWork ? `<div style="margin-bottom: 15px;"><strong>Link:</strong> <a href="${escapeHtml(sub.proofOfWork)}" style="color: #0066cc;">${escapeHtml(sub.proofOfWork)}</a></div>` : ''}
           ${files.map(pf => {
             if (pf.type.startsWith('image/')) {
-              return `<img src="${pf.dataUrl}" style="max-width:100%; height:auto; margin-top:15px; border: 1px solid #ccc; display: block;" />`;
+              return `<div style="margin-top: 15px; page-break-inside: avoid;"><img src="${pf.dataUrl}" style="max-width:100%; height:auto; border: 1px solid #ddd; border-radius: 4px; display: block;" /></div>`;
             } else {
-              return `<div style="margin-top:10px;">📄 Attached File: ${escapeHtml(pf.name)}</div>`;
+              return `<div style="margin-top: 10px; padding: 10px; background: #eee; border-radius: 4px;">📄 Attached File: ${escapeHtml(pf.name)}</div>`;
             }
           }).join('')}
           ${!sub.proofOfWork && files.length === 0 ? '<em>[No proof provided]</em>' : ''}
         </div>
       </div>
       
-      <div style="margin-bottom: 20px;">
-        <strong>Challenges Faced:</strong>
-        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.challengesFaced)}</div>
+      <div style="margin-bottom: 30px;">
+        <strong style="font-size: 18px; color: #000; display: block; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Challenges Faced</strong>
+        <div style="margin-top: 5px;">${formatText(sub.challengesFaced)}</div>
       </div>
       
-      <div style="margin-bottom: 20px;">
-        <strong>Learning Outcome:</strong>
-        <div style="margin-top: 5px; padding-left: 25px;">${formatText(sub.learningOutcome)}</div>
+      <div style="margin-bottom: 30px;">
+        <strong style="font-size: 18px; color: #000; display: block; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Learning Outcome</strong>
+        <div style="margin-top: 5px;">${formatText(sub.learningOutcome)}</div>
       </div>
     </div>
   `;
@@ -754,12 +752,10 @@ async function exportPDF() {
   // ── Step 2: Build the report HTML container ──
   const container = document.createElement('div');
   container.innerHTML = generateReportHTML();
-  document.body.appendChild(container);
-
-  container.style.position = 'absolute';
-  container.style.top = '-9999px';
-  container.style.left = '-9999px';
+  
+  // Set explicit width for accurate rendering, but don't append to body
   container.style.width = '800px';
+  container.style.background = '#ffffff';
 
   const opt = {
     margin: 10,
@@ -770,31 +766,23 @@ async function exportPDF() {
   };
 
   try {
-    // ── Step 3: Generate PDF with html2pdf, get jsPDF instance ──
-    const worker = html2pdf().set(opt).from(container);
-
-    // Use the toPdf() → get('pdf') pipeline to access the raw jsPDF object
-    const pdf = await worker.toPdf().get('pdf');
-
-    // ── Step 4: Inject watermark on every page (behind content) ──
-    if (watermarkDataUrl) {
-      // We need to re-order: watermark goes UNDER existing content.
-      // Since jsPDF draws in order, we add watermark first on a fresh page structure.
-      // However, html2pdf already rendered content. We use a workaround:
-      // Add the watermark image with low opacity on top — at 10-12% opacity
-      // it appears as a subtle background mark that doesn't hinder readability.
-      addWatermarkToAllPages(pdf, watermarkDataUrl, 0.11);
-    }
-
-    // ── Step 5: Save the final PDF ──
-    pdf.save(opt.filename);
+    // ── Step 3 & 4: Generate PDF, inject watermark, and save ──
+    await html2pdf()
+      .set(opt)
+      .from(container)
+      .toPdf()
+      .get('pdf')
+      .then(pdf => {
+        if (watermarkDataUrl) {
+          addWatermarkToAllPages(pdf, watermarkDataUrl, 0.11);
+        }
+      })
+      .save();
 
     showToast('✅ Professional PDF with watermark downloaded!', 'success');
   } catch (err) {
     console.error('PDF generation error:', err);
     showToast('❌ Error generating PDF', 'error');
-  } finally {
-    document.body.removeChild(container);
   }
 }
 
