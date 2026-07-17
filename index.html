@@ -5,12 +5,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description"
-    content="PROFOLIO 7-Day Developer Internship Task Tracker — Premium Glassmorphism Dashboard" />
-  <title>PROFOLIO Internship Tracker | 7-Day Developer Dashboard</title>
+    content="PROFOLIO 7-Day Internship Task Tracker — Multi-Role Glassmorphism Dashboard with Supabase" />
+  <title>PROFOLIO Internship Tracker | 7-Day Multi-Role Dashboard</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Supabase JS Client (v2) via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -18,154 +20,252 @@
   <!-- Toast -->
   <div id="toast" class="toast" aria-live="polite"></div>
 
-  <!-- ─── SIDEBAR ─── -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-diamond">
-        <img src="assets/profolio-logo.png" alt="Profolio Logo" class="brand-logo-img" />
+  <!-- ─── LOGIN SCREEN ─── -->
+  <section id="login-screen" class="login-screen">
+    <div class="login-particles" aria-hidden="true"></div>
+    <div class="login-card glass-card">
+      <div class="login-brand">
+        <div class="brand-diamond login-diamond">
+          <img src="assets/profolio-logo.png" alt="Profolio Logo" class="brand-logo-img" />
+        </div>
+        <h1 class="login-title">PROFOLIO</h1>
+        <p class="login-subtitle">7-Day Internship Task Tracker</p>
       </div>
-      <div>
-        <h1 class="brand-title">PROFOLIO</h1>
-        <p class="brand-sub">Internship Tracker</p>
+
+      <!-- Role selection tabs on login -->
+      <div class="login-role-tabs" id="login-role-tabs">
+        <button class="login-role-tab active" data-role="developer">
+          <span class="login-role-icon">💻</span>
+          <span>Developer</span>
+        </button>
+        <button class="login-role-tab" data-role="project_manager">
+          <span class="login-role-icon">📋</span>
+          <span>Project Manager</span>
+        </button>
+        <button class="login-role-tab" data-role="sales_executive">
+          <span class="login-role-icon">📈</span>
+          <span>Sales Executive</span>
+        </button>
       </div>
+
+      <form id="login-form" class="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="login-email">Email Address</label>
+          <input type="email" id="login-email" placeholder="your@email.com" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Min 6 characters" required minlength="6" />
+        </div>
+        <p class="login-error" id="login-error"></p>
+        <div class="login-actions">
+          <button type="submit" class="btn btn-primary login-btn" id="login-signin-btn">🔑 Sign In</button>
+          <button type="button" class="btn btn-accent-2 login-btn" id="login-signup-btn">✨ Sign Up</button>
+        </div>
+        <div class="login-divider"><span>or</span></div>
+        <button type="button" class="btn btn-ghost login-btn login-offline-btn" id="login-offline-btn">
+          🔌 Continue Offline (No Account)
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ─── DASHBOARD CONTAINER (hidden until logged in) ─── -->
+  <div id="dashboard-container" style="display:none;">
+
+    <!-- ─── SIDEBAR ─── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-diamond">
+          <img src="assets/profolio-logo.png" alt="Profolio Logo" class="brand-logo-img" />
+        </div>
+        <div>
+          <h1 class="brand-title">PROFOLIO</h1>
+          <p class="brand-sub">Internship Tracker</p>
+        </div>
+      </div>
+
+      <!-- Current role indicator in sidebar -->
+      <div class="sidebar-role-badge" id="sidebar-role-badge">
+        <span class="sidebar-role-icon" id="sidebar-role-icon">💻</span>
+        <span class="sidebar-role-name" id="sidebar-role-name">Developer</span>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav" aria-label="Day navigation">
+        <!-- Rendered by JS -->
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-reminder glass-card-sm">
+          <p class="reminder-title">📌 Daily Reminders</p>
+          <ul class="reminder-list">
+            <li>Fill in every field</li>
+            <li>Attach real proof</li>
+            <li>Submit before deadline</li>
+            <li>Daily submissions are mandatory</li>
+          </ul>
+        </div>
+        <div class="sidebar-actions" style="margin-top: 1rem;">
+          <button id="export-pdf-btn" class="btn btn-primary" style="width: 100%;">📄 Save as PDF</button>
+          <button id="logout-btn" class="btn btn-ghost btn-logout" style="width: 100%; margin-top: 0.5rem;">🚪
+            Logout</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile top bar -->
+    <div class="mobile-topbar" id="mobile-topbar">
+      <button class="hamburger" id="hamburger-btn" aria-label="Open menu">☰</button>
+      <span class="mobile-title">PROFOLIO Tracker</span>
+      <span class="mobile-date" id="mobile-date"></span>
     </div>
 
-    <nav class="sidebar-nav" id="sidebar-nav" aria-label="Day navigation">
-      <!-- Rendered by JS -->
-    </nav>
+    <!-- ─── MAIN ─── -->
+    <main class="main" id="main">
 
-    <div class="sidebar-footer">
-      <div class="sidebar-reminder glass-card-sm">
-        <p class="reminder-title">📌 Daily Reminders</p>
-        <ul class="reminder-list">
-          <li>Fill in every field</li>
-          <li>Attach real proof</li>
-          <li>Submit before deadline</li>
-          <li>Daily submissions are mandatory</li>
-        </ul>
-      </div>
-      <div class="sidebar-actions" style="margin-top: 1rem;">
-        <button id="export-pdf-btn" class="btn btn-primary" style="width: 100%;">📄 Save as PDF</button>
-      </div>
-    </div>
-  </aside>
+      <!-- HEADER -->
+      <header class="dash-header">
+        <div class="dash-header-left">
+          <h2 class="dash-title" id="dash-title">Developer Internship Dashboard</h2>
+          <p class="dash-subtitle">Track your PROFOLIO 7-Day internship tasks, submissions &amp; progress</p>
+        </div>
+        <div class="dash-header-right">
+          <span class="header-date-label">Today</span>
+          <span class="header-date-value" id="header-date"></span>
+          <button class="btn btn-start-internship" id="start-internship-btn">🚀 Start Internship</button>
+          <div class="countdown-timer" id="countdown-timer" style="display:none;">
+            <div class="countdown-label">⏳ Time Remaining</div>
+            <div class="countdown-digits" id="countdown-digits">
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cd-days">0</span>
+                <span class="countdown-tag">Days</span>
+              </div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cd-hours">00</span>
+                <span class="countdown-tag">Hrs</span>
+              </div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cd-mins">00</span>
+                <span class="countdown-tag">Min</span>
+              </div>
+              <span class="countdown-sep">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-num" id="cd-secs">00</span>
+                <span class="countdown-tag">Sec</span>
+              </div>
+            </div>
+            <div class="countdown-day-info" id="countdown-day-info"></div>
+          </div>
+        </div>
+      </header>
 
-  <!-- Mobile top bar -->
-  <div class="mobile-topbar" id="mobile-topbar">
-    <button class="hamburger" id="hamburger-btn" aria-label="Open menu">☰</button>
-    <span class="mobile-title">PROFOLIO Tracker</span>
-    <span class="mobile-date" id="mobile-date"></span>
+      <!-- ROLE SELECTOR TABS (in dashboard) -->
+      <section class="role-selector-bar" id="role-selector-bar" aria-label="Role selector">
+        <button class="role-selector-tab active" data-role="developer">
+          <span class="role-sel-icon">💻</span>
+          <span class="role-sel-label">Developer</span>
+        </button>
+        <button class="role-selector-tab" data-role="project_manager">
+          <span class="role-sel-icon">📋</span>
+          <span class="role-sel-label">Project Manager</span>
+        </button>
+        <button class="role-selector-tab" data-role="sales_executive">
+          <span class="role-sel-icon">📈</span>
+          <span class="role-sel-label">Sales Executive</span>
+        </button>
+      </section>
+
+      <!-- OVERVIEW STATS -->
+      <section class="overview-stats" id="overview-stats" aria-label="Internship Overview">
+        <div class="stat-card stat-total">
+          <div class="stat-icon-wrap"><span>📅</span></div>
+          <div class="stat-body">
+            <span class="stat-num" id="stat-total-days">7</span>
+            <span class="stat-label">Total Days</span>
+          </div>
+        </div>
+        <div class="stat-card stat-completed">
+          <div class="stat-icon-wrap"><span>✅</span></div>
+          <div class="stat-body">
+            <span class="stat-num" id="stat-completed-days">0</span>
+            <span class="stat-label">Completed</span>
+          </div>
+        </div>
+        <div class="stat-card stat-pending">
+          <div class="stat-icon-wrap"><span>⏳</span></div>
+          <div class="stat-body">
+            <span class="stat-num" id="stat-pending-days">7</span>
+            <span class="stat-label">Pending</span>
+          </div>
+        </div>
+        <div class="stat-card stat-progress">
+          <div class="stat-icon-wrap"><span>📊</span></div>
+          <div class="stat-body">
+            <span class="stat-num" id="stat-progress-pct">0%</span>
+            <span class="stat-label">Progress</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- OVERALL PROGRESS BAR -->
+      <section class="overall-progress glass-card">
+        <div class="progress-row">
+          <span class="progress-title">Overall Internship Progress</span>
+          <span class="progress-pct" id="progress-pct-text">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p class="progress-summary" id="progress-summary">Start your internship journey — select a day below.
+        </p>
+        <!-- Mini day dots -->
+        <div class="day-dots" id="day-dots">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- DAY CARDS GRID (7 glass cards) -->
+      <section class="day-cards-grid" id="day-cards-grid" aria-label="Day task cards">
+        <!-- Rendered by JS: 7 glass day cards -->
+      </section>
+
+      <!-- DAY CONTENT PANEL (shows when a day is selected from sidebar) -->
+      <section class="day-panel" id="day-panel">
+        <!-- Rendered by JS: day header, tasks, deliverables, submission form -->
+      </section>
+
+      <!-- NOTES -->
+      <section class="notes-section glass-card">
+        <h3 class="notes-title">📝 Personal Notes</h3>
+        <textarea id="notes-area" class="notes-area"
+          placeholder="Write any extra comments, observations, or reminders here…" rows="4"></textarea>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        <p>PROFOLIO 7-Day Internship Practice Project · Built with ❤️ &amp; Dinesh G </p>
+      </footer>
+
+    </main>
   </div>
 
-  <!-- ─── MAIN ─── -->
-  <main class="main" id="main">
-
-    <!-- HEADER -->
-    <header class="dash-header">
-      <div class="dash-header-left">
-        <h2 class="dash-title">Developer Internship Dashboard</h2>
-        <p class="dash-subtitle">Track your PROFOLIO 7-Day internship tasks, submissions &amp; progress</p>
-      </div>
-      <div class="dash-header-right">
-        <span class="header-date-label">Today</span>
-        <span class="header-date-value" id="header-date"></span>
-        <button class="btn btn-start-internship" id="start-internship-btn">🚀 Start Internship</button>
-        <div class="countdown-timer" id="countdown-timer" style="display:none;">
-          <div class="countdown-label">⏳ Time Remaining</div>
-          <div class="countdown-digits" id="countdown-digits">
-            <div class="countdown-unit">
-              <span class="countdown-num" id="cd-days">0</span>
-              <span class="countdown-tag">Days</span>
-            </div>
-            <span class="countdown-sep">:</span>
-            <div class="countdown-unit">
-              <span class="countdown-num" id="cd-hours">00</span>
-              <span class="countdown-tag">Hrs</span>
-            </div>
-            <span class="countdown-sep">:</span>
-            <div class="countdown-unit">
-              <span class="countdown-num" id="cd-mins">00</span>
-              <span class="countdown-tag">Min</span>
-            </div>
-            <span class="countdown-sep">:</span>
-            <div class="countdown-unit">
-              <span class="countdown-num" id="cd-secs">00</span>
-              <span class="countdown-tag">Sec</span>
-            </div>
-          </div>
-          <div class="countdown-day-info" id="countdown-day-info"></div>
+  <!-- ─── SUBMISSION MODAL OVERLAY ─── -->
+  <div class="modal-overlay" id="submission-modal" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-panel glass-card">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="modal-day-badge" id="modal-day-badge">Day 1</span>
+          <h2 class="modal-title" id="modal-title">Daily Submission</h2>
         </div>
+        <button class="modal-close-btn" id="modal-close-btn" aria-label="Close modal">&times;</button>
       </div>
-    </header>
-
-    <!-- OVERVIEW STATS -->
-    <section class="overview-stats" id="overview-stats" aria-label="Internship Overview">
-      <div class="stat-card stat-total">
-        <div class="stat-icon-wrap"><span>📅</span></div>
-        <div class="stat-body">
-          <span class="stat-num" id="stat-total-days">7</span>
-          <span class="stat-label">Total Days</span>
-        </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Rendered by JS: checklist, deliverables, submission form -->
       </div>
-      <div class="stat-card stat-completed">
-        <div class="stat-icon-wrap"><span>✅</span></div>
-        <div class="stat-body">
-          <span class="stat-num" id="stat-completed-days">0</span>
-          <span class="stat-label">Completed</span>
-        </div>
-      </div>
-      <div class="stat-card stat-pending">
-        <div class="stat-icon-wrap"><span>⏳</span></div>
-        <div class="stat-body">
-          <span class="stat-num" id="stat-pending-days">7</span>
-          <span class="stat-label">Pending</span>
-        </div>
-      </div>
-      <div class="stat-card stat-progress">
-        <div class="stat-icon-wrap"><span>📊</span></div>
-        <div class="stat-body">
-          <span class="stat-num" id="stat-progress-pct">0%</span>
-          <span class="stat-label">Progress</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- OVERALL PROGRESS BAR -->
-    <section class="overall-progress glass-card">
-      <div class="progress-row">
-        <span class="progress-title">Overall Internship Progress</span>
-        <span class="progress-pct" id="progress-pct-text">0%</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-      <p class="progress-summary" id="progress-summary">Start your internship journey — select a day from the sidebar.
-      </p>
-
-      <!-- Mini day dots -->
-      <div class="day-dots" id="day-dots">
-        <!-- Rendered by JS -->
-      </div>
-    </section>
-
-    <!-- DAY CONTENT PANEL -->
-    <section class="day-panel" id="day-panel">
-      <!-- Rendered by JS: day header, tasks, deliverables, submission form -->
-    </section>
-
-    <!-- NOTES -->
-    <section class="notes-section glass-card">
-      <h3 class="notes-title">📝 Personal Notes</h3>
-      <textarea id="notes-area" class="notes-area"
-        placeholder="Write any extra comments, observations, or reminders here…" rows="4"></textarea>
-    </section>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-      <p>PROFOLIO 7-Day Developer Internship Practice Project · Built with ❤️ &amp; Dinesh G </p>
-    </footer>
-
-  </main>
+    </div>
+  </div>
 
   <!-- Overlay for mobile sidebar -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
