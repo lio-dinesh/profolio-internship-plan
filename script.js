@@ -1971,18 +1971,31 @@ async function checkAuthSession() {
 async function init() {
   initEventListeners();
 
-  // Check for existing Supabase session
   if (isSupabaseReady()) {
+    // 1. Listen for auth state changes (Crucial for Google OAuth redirects)
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await checkAuthSession();
+      } else if (event === 'SIGNED_OUT') {
+        state.currentUser = null;
+        showLoginScreen();
+      }
+    });
+
+    // 2. Check for existing session on initial load
     try {
       const isLoggedIn = await checkAuthSession();
-      if (isLoggedIn) return;
+      if (!isLoggedIn) {
+        showLoginScreen();
+      }
     } catch (err) {
       console.warn('Session check failed:', err);
+      showLoginScreen();
     }
+  } else {
+    // No session — show login screen
+    showLoginScreen();
   }
-
-  // No session — show login screen
-  showLoginScreen();
 }
 
 document.addEventListener('DOMContentLoaded', init);
