@@ -1972,9 +1972,16 @@ async function init() {
   initEventListeners();
 
   if (isSupabaseReady()) {
-    // 1. Listen for auth state changes (Crucial for Google OAuth redirects)
+    // Detect if Google OAuth just redirected back (access_token in URL hash)
+    const hasOAuthToken = window.location.hash.includes('access_token');
+
+    // 1. Listen for auth state changes (fires when Supabase processes the hash token)
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Clean the URL hash so it doesn't persist
+        if (window.location.hash.includes('access_token')) {
+          history.replaceState(null, '', window.location.pathname);
+        }
         await checkAuthSession();
       } else if (event === 'SIGNED_OUT') {
         state.currentUser = null;
@@ -1982,18 +1989,30 @@ async function init() {
       }
     });
 
-    // 2. Check for existing session on initial load
-    try {
-      const isLoggedIn = await checkAuthSession();
-      if (!isLoggedIn) {
+    if (hasOAuthToken) {
+      // Google just redirected back — wait for onAuthStateChange to fire (above)
+      // Show a brief loading state instead of flashing the login page
+      const loginScreen = document.getElementById('login-screen');
+      const dashContainer = document.getElementById('dashboard-container');
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (dashContainer) dashContainer.style.display = 'none';
+
+      // Safety fallback: if after 4s no session is found, show login
+      setTimeout(async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) showLoginScreen();
+      }, 4000);
+    } else {
+      // 2. Normal page load — check for existing session
+      try {
+        const isLoggedIn = await checkAuthSession();
+        if (!isLoggedIn) showLoginScreen();
+      } catch (err) {
+        console.warn('Session check failed:', err);
         showLoginScreen();
       }
-    } catch (err) {
-      console.warn('Session check failed:', err);
-      showLoginScreen();
     }
   } else {
-    // No session — show login screen
     showLoginScreen();
   }
 }
