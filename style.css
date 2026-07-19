@@ -11,28 +11,28 @@
 }
 
 :root {
-  --bg-start:      hsl(238, 45%, 8%);
-  --bg-mid:        hsl(252, 40%, 11%);
-  --bg-end:        hsl(268, 38%, 9%);
-  --accent:        hsl(253, 88%, 70%);
-  --accent-glow:   rgba(139, 92, 246, 0.4);
-  --accent-2:      hsl(200, 80%, 65%);
-  --success:       hsl(142, 72%, 55%);
-  --danger:        hsl(355, 80%, 62%);
-  --warn:          hsl(38,  90%, 62%);
-  --text-primary:  hsl(220, 25%, 96%);
-  --text-secondary:hsl(220, 15%, 65%);
-  --text-muted:    hsl(220, 12%, 45%);
+  --bg-start:      #E5E7EB;
+  --bg-mid:        #E5E7EB;
+  --bg-end:        #F3F4F6;
+  --accent:        #2563EB;
+  --accent-glow:   rgba(37, 99, 235, 0.4);
+  --accent-2:      #60A5FA;
+  --success:       #10B981;
+  --danger:        #EF4444;
+  --warn:          #F59E0B;
+  --text-primary:  #111827;
+  --text-secondary:#4B5563;
+  --text-muted:    #6B7280;
 
   /* Role-specific accents */
-  --role-developer:   hsl(253, 88%, 70%);
-  --role-pm:          hsl(175, 70%, 50%);
-  --role-sales:       hsl(38, 90%, 62%);
+  --role-developer:   #2563EB;
+  --role-pm:          #059669;
+  --role-sales:       #D97706;
 
-  --glass-bg:      rgba(255, 255, 255, 0.055);
-  --glass-bg-2:    rgba(255, 255, 255, 0.035);
-  --glass-border:  rgba(255, 255, 255, 0.12);
-  --glass-shadow:  0 8px 32px rgba(0, 0, 0, 0.45);
+  --glass-bg:      rgba(255, 255, 255, 0.85);
+  --glass-bg-2:    rgba(255, 255, 255, 0.95);
+  --glass-border:  rgba(148, 163, 184, 0.5);
+  --glass-shadow:  0 8px 32px rgba(0, 0, 0, 0.1);
   --blur:          blur(18px);
 
   --gap:    1.25rem;
@@ -50,10 +50,7 @@ html { font-size: 16px; scroll-behavior: smooth; }
 
 body {
   font-family: var(--font);
-  background:
-    radial-gradient(ellipse at 15% 8%, hsl(253, 70%, 18%) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 85%, hsl(200, 60%, 14%) 0%, transparent 50%),
-    linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
+  background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
@@ -94,11 +91,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 500;
-  background:
-    radial-gradient(ellipse at 20% 20%, hsl(253, 60%, 16%) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, hsl(200, 50%, 12%) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 50%, hsl(175, 40%, 10%) 0%, transparent 60%),
-    linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
+  background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
   padding: 1.5rem;
 }
 
@@ -283,7 +276,7 @@ body {
   left: 0;
   width: var(--sidebar-w);
   height: 100vh;
-  background: rgba(12, 10, 26, 0.72);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-right: 1px solid var(--glass-border);
@@ -517,7 +510,7 @@ body {
   top: 0;
   z-index: 130;
   padding: 0.9rem 1rem;
-  background: rgba(12, 10, 26, 0.85);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--glass-border);
 }

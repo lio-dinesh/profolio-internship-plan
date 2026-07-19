@@ -24,8 +24,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let supabaseClient = null;
 try {
   if (
-    SUPABASE_URL !== 'YOUR_SUPABASE_URL' &&
-    SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY' &&
+    SUPABASE_URL && SUPABASE_URL.startsWith('http') &&
+    SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.length > 20 &&
     typeof window.supabase !== 'undefined'
   ) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1807,6 +1807,12 @@ function initEventListeners() {
     handleSignUp(email, password);
   });
 
+  // Google Sign In
+  const googleBtn = document.getElementById('login-google-btn');
+  if (googleBtn) {
+    googleBtn.addEventListener('click', handleGoogleSignIn);
+  }
+
   // Continue Offline
   document.getElementById('login-offline-btn').addEventListener('click', handleOfflineMode);
 
@@ -1881,34 +1887,95 @@ function initEventListeners() {
 }
 
 /* ════════════════════════════════════
-   INIT
+   GOOGLE AUTH & INIT
    ════════════════════════════════════ */
+
+// Google Auth: login
+async function handleGoogleSignIn() {
+  if (!isSupabaseReady()) {
+    showLoginError('Supabase is not configured. Use "Continue Offline" or add your Supabase credentials.');
+    return;
+  }
+
+  try {
+    showLoginError('');
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.error('Google Sign-In Error:', err);
+    showLoginError('Failed to sign in with Google.');
+  }
+}
+
+// Google Auth: fetch user & save profile
+async function checkAuthSession() {
+  if (!isSupabaseReady()) return false;
+
+  const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+  if (session && session.user) {
+    const user = session.user;
+    state.currentUser = user;
+    state.isOffline = false;
+
+    // Extract Google metadata
+    const email = user.email;
+    const fullName = user.user_metadata?.full_name || '';
+    const avatarUrl = user.user_metadata?.avatar_url || '';
+
+    // Check if the user already has a profile
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) {
+      // First time Google login: Insert new profile
+      const roleToSave = selectedLoginRole || 'developer';
+
+      await supabaseClient.from('profiles').upsert({
+        id: user.id,
+        email: email,
+        full_name: fullName,
+        avatar_url: avatarUrl,
+        role: roleToSave
+      }, { onConflict: 'id' });
+
+      state.userRole = roleToSave;
+      state.activeRole = roleToSave;
+    } else {
+      // Existing user
+      state.userRole = profile.role;
+      state.activeRole = profile.role;
+
+      // Optionally update avatar_url if it changed
+      if (avatarUrl && profile.avatar_url !== avatarUrl) {
+        await supabaseClient.from('profiles')
+          .update({ avatar_url: avatarUrl })
+          .eq('id', user.id);
+      }
+    }
+
+    showDashboard(); // Transition to the main app view
+    return true;
+  }
+  return false;
+}
+
 async function init() {
   initEventListeners();
 
   // Check for existing Supabase session
   if (isSupabaseReady()) {
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session && session.user) {
-        state.currentUser = session.user;
-        state.isOffline = false;
-
-        // Fetch profile for role
-        const { data: profile } = await supabaseClient
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile && profile.role) {
-          state.userRole = profile.role;
-          state.activeRole = profile.role;
-        }
-
-        showDashboard();
-        return;
-      }
+      const isLoggedIn = await checkAuthSession();
+      if (isLoggedIn) return;
     } catch (err) {
       console.warn('Session check failed:', err);
     }
